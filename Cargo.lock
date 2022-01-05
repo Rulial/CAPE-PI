@@ -1012,7 +1012,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cap-rust-sandbox"
+name = "cape"
 version = "0.1.0"
 dependencies = [
  "anyhow",

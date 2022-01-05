@@ -1,5 +1,5 @@
 use anyhow::Result;
-use cap_rust_sandbox::{ethereum::*, types::Greeter};
+use cape::{ethereum::*, types::Greeter};
 use ethers::{core::k256::ecdsa::SigningKey, prelude::*};
 use std::path::Path;
 

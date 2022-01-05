@@ -8,7 +8,11 @@
   inputs.flake-compat.url = "github:edolstra/flake-compat";
   inputs.flake-compat.flake = false;
 
-  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.fenix.url = "github:nix-community/fenix";
+  inputs.fenix.inputs.nixpkgs.follows = "nixpkgs";
+
+  inputs.crate2nix.url = "github:balsoft/crate2nix/balsoft/fix-broken-ifd";
+  inputs.crate2nix.flake = false;
 
   inputs.pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   # See https://github.com/cachix/pre-commit-hooks.nix/pull/122
@@ -20,18 +24,28 @@
     , nixpkgs
     , flake-utils
     , flake-compat
-    , rust-overlay
+    , fenix
+    , crate2nix
     , pre-commit-hooks
     , ...
     }:
     flake-utils.lib.eachDefaultSystem (system:
     let
-      overlays = [ (import rust-overlay) ];
+      fenixPackage = fenix.packages.${system}.stable.withComponents [ "cargo" "clippy" "rust-src" "rustc" "rustfmt" ];
+      rustOverlay = final: prev:
+        {
+          inherit fenixPackage;
+          rustc = fenixPackage;
+          cargo = fenixPackage;
+          rust-src = fenixPackage;
+        };
+
       pkgs = import nixpkgs {
-        inherit system overlays;
+        inherit system;
+        overlays = [
+          rustOverlay
+        ];
       };
-    in
-    {
       checks = {
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
@@ -57,6 +71,35 @@
           };
         };
       };
+
+      inherit (import "${crate2nix}/tools.nix" { inherit pkgs; })
+        generatedCargoNix;
+
+      project = import
+        (generatedCargoNix {
+          name = "cape";
+          src = ./.;
+        })
+        {
+          inherit pkgs;
+          defaultCrateOverrides = pkgs.defaultCrateOverrides // {
+            # Crate dependency overrides go here
+          };
+        };
+
+    in
+    rec {
+
+
+      inherit checks;
+
+      # packages.cape = project.workspaceMembers.cape.build;
+      # packages.tests.cape = project.workspaceMembers.cape.override {
+      #   runTests = true;
+      # };
+
+      # defaultPackage = self.packages.${system}.workspaceMembers.cape;
+
       devShell =
         let
           mySolc = pkgs.callPackage ./nix/solc-bin { version = "0.8.10"; };
@@ -70,18 +113,15 @@
             pythonEnv
           ];
 
-          stableToolchain = pkgs.rust-bin.stable."1.56.0".minimal.override {
-            extensions = [ "rustfmt" "clippy" "llvm-tools-preview" "rust-src" ];
-          };
           rustDeps = with pkgs; [
             pkgconfig
             openssl
 
             curl
             plantuml
-            stableToolchain
+            # cargo-edit
 
-            cargo-edit
+            fenixPackage
           ] ++ lib.optionals stdenv.isDarwin [
             # required to compile ethers-rs
             darwin.apple_sdk.frameworks.Security
@@ -90,7 +130,7 @@
             # https://github.com/NixOS/nixpkgs/issues/126182
             libiconv
           ] ++ lib.optionals (stdenv.system != "aarch64-darwin") [
-            cargo-watch # broken: https://github.com/NixOS/nixpkgs/issues/146349
+            # cargo-watch # broken: https://github.com/NixOS/nixpkgs/issues/146349
           ];
           # nixWithFlakes allows pre v2.4 nix installations to use flake commands (like `nix flake update`)
           nixWithFlakes = pkgs.writeShellScriptBin "nix" ''
@@ -99,6 +139,7 @@
         in
         pkgs.mkShell
           {
+            # inputsFrom = builtins.attrValues self.packages.${system};
             buildInputs = with pkgs; [
               nixWithFlakes
               go-ethereum
@@ -119,7 +160,7 @@
             ++ myPython
             ++ rustDeps;
 
-            RUST_SRC_PATH = "${stableToolchain}/lib/rustlib/src/rust/library";
+            RUST_SRC_PATH = "${fenixPackage}/lib/rustlib/src/rust/library";
             RUST_BACKTRACE = 1;
             RUST_LOG = "info";
 
