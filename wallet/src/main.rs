@@ -249,6 +249,42 @@ fn add_form_demonstration(web_server: &mut tide::Server<WebState>) {
         .get(form_demonstration);
 }
 
+fn add_routes(web_server: &mut tide::Server<WebState>, api: toml::Value) {
+    if let Some(api_map) = api["route"].as_table() {
+        api_map.values().for_each(|v| {
+            let web_socket = v
+                .get("WEB_SOCKET")
+                .map(|v| v.as_bool().expect("expected boolean value for WEB_SOCKET"))
+                .unwrap_or(false);
+            let routes = match &v["PATH"] {
+                toml::Value::String(s) => {
+                    vec![s.clone()]
+                }
+                toml::Value::Array(a) => a
+                    .iter()
+                    .filter_map(|v| {
+                        if let Some(s) = v.as_str() {
+                            Some(String::from(s))
+                        } else {
+                            println!("Oops! Array element: {:?}", v);
+                            None
+                        }
+                    })
+                    .collect(),
+                _ => panic!("Expecting a toml::String or toml::Array, but got: {:?}", &v),
+            };
+            for path in routes {
+                let mut route = web_server.at(&path);
+                if web_socket {
+                    route.get(WebSocket::new(handle_web_socket));
+                } else {
+                    route.get(entry_page);
+                }
+            }
+        });
+    }
+}
+
 #[async_std::main]
 async fn main() -> Result<(), std::io::Error> {
     tracing_subscriber::fmt().pretty().init();
@@ -296,40 +332,7 @@ async fn main() -> Result<(), std::io::Error> {
     add_form_demonstration(&mut web_server);
 
     // Add routes from a configuration file.
-    if let Some(api_map) = api["route"].as_table() {
-        api_map.values().for_each(|v| {
-            let web_socket = v
-                .get("WEB_SOCKET")
-                .map(|v| v.as_bool().expect("expected boolean value for WEB_SOCKET"))
-                .unwrap_or(false);
-            let routes = match &v["PATH"] {
-                toml::Value::String(s) => {
-                    vec![s.clone()]
-                }
-                toml::Value::Array(a) => a
-                    .iter()
-                    .filter_map(|v| {
-                        if let Some(s) = v.as_str() {
-                            Some(String::from(s))
-                        } else {
-                            println!("Oops! Array element: {:?}", v);
-                            None
-                        }
-                    })
-                    .collect(),
-                _ => panic!("Expecting a toml::String or toml::Array, but got: {:?}", &v),
-            };
-            for path in routes {
-                let mut route = web_server.at(&path);
-                if web_socket {
-                    route.get(WebSocket::new(handle_web_socket));
-                } else {
-                    route.get(entry_page);
-                }
-            }
-        });
-    }
-    println!("6");
+    add_routes(&mut web_server, api);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| (50000).to_string());
     let addr = format!("0.0.0.0:{}", port);

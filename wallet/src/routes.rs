@@ -105,10 +105,11 @@ pub enum ApiRouteKey {
     getaddress,
     getbalance,
     getinfo,
-    importkey,
+    // importkey,
     mint,
     newasset,
     newkey,
+    newsponsorship,
     newwallet,
     openwallet,
     send,
@@ -250,6 +251,59 @@ pub fn dummy_url_eval(
         .build())
 }
 
+/// Initialize the wallet transaction building data structures by
+/// querying the current state of the ledger, and storing the data in
+/// local storage. Currently, it does not derive any keys. The
+/// workflow is to create a wallet, and then manually derive as many
+/// keys as you like using /newkey.
+///
+/// I can see it being better to define a preset number of keys (this
+/// especially makes recovery a bit more streamlined). This could be
+/// implemented in the GUI by automatically calling /newkey a set
+/// number of times, but if we're trying to keep business logic/policy
+/// out of the GUI, perhaps we better do it here.
+///
+/// We currently do not differentiate between a new seed and a
+/// recovery seed, but in the recovery case the user will want to use
+/// the /newkey options to initiate a ledger scan to recover their old
+/// records belonging to that key. If we combine wallet initialization
+/// with key generation, then we would differentiate between creation
+/// and recovery, so we could automatically kick off ledger scans in
+/// the recovery case.
+
+pub fn newwallet(
+    route_pattern: &str,
+    bindings: &HashMap<String, RouteBinding>,
+) -> Result<tide::Response, tide::Error> {
+    let mn_str: String = if let Some(mnemonic) = bindings.get(":mnemonic") {
+        String::from_utf8(mnemonic.value.as_identifier()?.value())?
+    } else {
+        "missing mnemonic".to_string()
+    };
+    let route_str = route_pattern.to_string();
+    let title = route_pattern.split_once('/').unwrap_or((&route_str, "")).0;
+    Ok(tide::Response::builder(200)
+        .body(tide::Body::from_string(format!(
+            "<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>{}</title>
+    <link rel='stylesheet' href='style.css'>
+    <script src='script.js'></script>
+  </head>
+  <body>
+    <h1>{}</h1>
+    <p>{:?}</p>
+    <p>{}</p>
+  </body>
+</html>",
+            title, route_str, bindings, mn_str
+        )))
+        .content_type(tide::http::mime::HTML)
+        .build())
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Endpoints
 //
@@ -282,11 +336,12 @@ pub async fn dispatch_url(
         ApiRouteKey::getaddress => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::getbalance => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::getinfo => dummy_url_eval(route_pattern, bindings),
-        ApiRouteKey::importkey => dummy_url_eval(route_pattern, bindings),
+        // ApiRouteKey::importkey => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::mint => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::newasset => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::newkey => dummy_url_eval(route_pattern, bindings),
-        ApiRouteKey::newwallet => dummy_url_eval(route_pattern, bindings),
+        ApiRouteKey::newsponsorship => dummy_url_eval(route_pattern, bindings),
+        ApiRouteKey::newwallet => newwallet(route_pattern, bindings),
         ApiRouteKey::openwallet => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::send => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::trace => dummy_url_eval(route_pattern, bindings),

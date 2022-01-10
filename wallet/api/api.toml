@@ -24,7 +24,7 @@ HTML_TOP = """
               alt='Spectrum Logo'
               height='115'/></div>
     <h1>Spectrum CAPE Web Interface</h1>
-    <p>The Spectrum CAPE Web Inteface provides a way to create and interact with a local wallet that can be used to build, submit, and track transactions, as well as creating and managing new types of assets.</p>
+    <p>The Spectrum CAPE Web Interface provides a way to create and interact with a local wallet that can be used to build, submit, and track transactions, as well as creating and managing new types of assets.</p>
 """
 
 HTML_BOTTOM = """
@@ -101,15 +101,15 @@ DOC = """
 Generate a key of the given type to be used to define assets.
 """
 
-[route.importkey]
-PATH = ["importkey/freeze/:freeze", "importkey/send/:send", "importkey/send/:send/:index", "importkey/trace/:trace" ]
-":freeze" = "TaggedBase64"
-":send" = "TaggedBase64"
-":index" = "Integer"
-":trace" = "TaggedBase64"
-DOC = """
-Import the given key into the current wallet. For transfer (send) keys, the optional scan index give a block index at which to begin scanning. If omitted, the entire ledger is scanned for transactions using the key.
-"""
+# [route.importkey]
+# PATH = ["importkey/freeze/:freeze", "importkey/send/:send", "importkey/send/:send/:index", "importkey/trace/:trace" ]
+# ":freeze" = "TaggedBase64"
+# ":send" = "TaggedBase64"
+# ":index" = "Integer"
+# ":trace" = "TaggedBase64"
+# DOC = """
+# Import the given key into the current wallet. For transfer (send) keys, the optional scan index give a block index at which to begin scanning. If omitted, the entire ledger is scanned for transactions using the key.
+# """
 
 [route.send]
 PATH = ["send/sender/:sender/amount/:amount/asset/:asset/recipient/:recipient"]
@@ -141,31 +141,40 @@ Unwrap amount units of the given asset into the given ERC-20 address. Returns a 
 
 [route.newasset]
 PATH = [
-     "newasset/erc20/:erc20/symbol/:symbol/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/erc20/:erc20/symbol/:symbol/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey",
-     "newasset/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey",
-     "newasset/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/symbol/:symbol/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/symbol/:symbol/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey",
-     "newasset/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/freezekey/:freezekey",
-     "newasset/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
-     "newasset/symbol/:symbol/description/:description/issuer/:issuer/amount/:amount/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address"
+     "newasset/symbol/:symbol/:description/issuer/:issuer/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
+     "newasset/symbol/:symbol/description/:description/issuer/:issuer/sendkey/:sendkey/freezekey/:freezekey",
+     "newasset/symbol/:symbol/description/:description/issuer/:issuer/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address"
 ]
 ":erc20" = "TaggedBase64"
 ":symbol" = "String"
 ":description" = "TaggedBase64"
 ":issuer" = "String"
-":amount" = "Integer"
 ":sendkey" = "TaggedBase64"
 ":freezekey" = "TaggedBase64"
 ":tracekey" = "TaggedBase64"
 ":trace_amount" = "Boolean"
 ":trace_address" = "Boolean"
 DOC = """
-Mint amount units of a given asset code controlled by the current wallet. Reports the asset code associated with the given keys. Keys are generated with *newkey*.
+Create a native asset type. Reports the asset code associated with the given keys. Keys are generated with *newkey*. Note, this does not mint any units of the new asset type.
+"""
+
+[route.newsponsorship]
+PATH = [
+     "newsponsorship/erc20/:erc20/symbol/:symbol/:description/issuer/:issuer/sendkey/:sendkey/freezekey/:freezekey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
+     "newsponsorship/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/sendkey/:sendkey/freezekey/:freezekey",
+     "newsponsorship/erc20/:erc20/symbol/:symbol/description/:description/issuer/:issuer/sendkey/:sendkey/tracekey/:tracekey/traceamount/:trace_amount/traceaddress/:trace_address",
+]
+":erc20" = "TaggedBase64"
+":symbol" = "String"
+":description" = "TaggedBase64"
+":issuer" = "String"
+":sendkey" = "TaggedBase64"
+":freezekey" = "TaggedBase64"
+":tracekey" = "TaggedBase64"
+":trace_amount" = "Boolean"
+":trace_address" = "Boolean"
+DOC = """
+Create a wrapped asset type. Reports the asset code associated with the given keys. Keys are generated with *newkey*. Note, this does not mint any units of the new asset type.
 """
 
 [route.mint]
@@ -179,7 +188,6 @@ DOC = """
 Mint amount units of a given asset code controlled by the current wallet. Reports the asset code associated with the given keys. Keys are generated with *newkey*.
 """
 
-# TODO !corbett This is also called sponsor, but that seems harder to understand than 'deposit' or 'wrap'.
 [route.deposit]
 PATH = ["deposit/asset/:asset/erc20/:erc20/amount/:amount"]
 ":asset" = "TaggedBase64"
