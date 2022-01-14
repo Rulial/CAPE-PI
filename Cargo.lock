@@ -149,16 +149,6 @@ dependencies = [
 [[package]]
 name = "ark-bls12-377"
 version = "0.3.0"
-source = "git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af#677b4ae751a274037880ede86e9b6f30f62635af"
-dependencies = [
- "ark-ec",
- "ark-ff",
- "ark-std",
-]
-
-[[package]]
-name = "ark-bls12-377"
-version = "0.3.0"
 source = "git+https://github.com/arkworks-rs/curves#677b4ae751a274037880ede86e9b6f30f62635af"
 dependencies = [
  "ark-ec",
@@ -191,20 +181,9 @@ dependencies = [
 [[package]]
 name = "ark-bw6-761"
 version = "0.3.0"
-source = "git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af#677b4ae751a274037880ede86e9b6f30f62635af"
-dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ec",
- "ark-ff",
- "ark-std",
-]
-
-[[package]]
-name = "ark-bw6-761"
-version = "0.3.0"
 source = "git+https://github.com/arkworks-rs/curves#677b4ae751a274037880ede86e9b6f30f62635af"
 dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-ec",
  "ark-ff",
  "ark-std",
@@ -228,20 +207,9 @@ dependencies = [
 [[package]]
 name = "ark-ed-on-bls12-377"
 version = "0.3.0"
-source = "git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af#677b4ae751a274037880ede86e9b6f30f62635af"
-dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ec",
- "ark-ff",
- "ark-std",
-]
-
-[[package]]
-name = "ark-ed-on-bls12-377"
-version = "0.3.0"
 source = "git+https://github.com/arkworks-rs/curves#677b4ae751a274037880ede86e9b6f30f62635af"
 dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-ec",
  "ark-ff",
  "ark-std",
@@ -252,17 +220,6 @@ name = "ark-ed-on-bls12-381"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43b7ada17db3854f5994e74e60b18e10e818594935ee7e1d329800c117b32970"
-dependencies = [
- "ark-bls12-381",
- "ark-ec",
- "ark-ff",
- "ark-std",
-]
-
-[[package]]
-name = "ark-ed-on-bls12-381-bandersnatch"
-version = "0.3.0"
-source = "git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af#677b4ae751a274037880ede86e9b6f30f62635af"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -1109,10 +1066,10 @@ dependencies = [
  "hex",
  "itertools 0.10.3",
  "jf-aap",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-primitives 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-plonk",
+ "jf-primitives",
+ "jf-rescue",
+ "jf-utils",
  "num-derive",
  "num-traits",
  "proptest",
@@ -1123,7 +1080,7 @@ dependencies = [
  "sha3",
  "strum_macros",
  "tokio",
- "zerok_lib",
+ "zerok_lib 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/spectrum.git?rev=4fec6c5ba8d15df94955195796cd016afc6cb232)",
 ]
 
 [[package]]
@@ -1133,11 +1090,49 @@ dependencies = [
  "ethers 0.6.0 (git+https://github.com/gakonst/ethers-rs)",
  "itertools 0.10.3",
  "jf-aap",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-rescue",
+ "jf-utils",
  "rand 0.8.4",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cape_wallet"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "bincode",
+ "futures",
+ "futures-util",
+ "itertools 0.10.3",
+ "jf-aap",
+ "jf-plonk",
+ "jf-primitives",
+ "jf-utils",
+ "lazy_static",
+ "markdown",
+ "rand_chacha 0.3.1",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "shellexpand",
+ "snafu",
+ "structopt",
+ "strum",
+ "strum_macros",
+ "surf",
+ "tagged-base64",
+ "tempdir",
+ "tide",
+ "tide-websockets",
+ "toml",
+ "tracing",
+ "tracing-distributed",
+ "tracing-futures",
+ "tracing-subscriber 0.2.25",
+ "tracing-test",
+ "zerok_lib 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/spectrum.git?branch=jeb-wallet-api)",
 ]
 
 [[package]]
@@ -3219,11 +3214,11 @@ version = "0.0.1"
 source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c#2a40d01c938cdcc716071af5a0dc9b3242181c2c"
 dependencies = [
  "anyhow",
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-bls12-381",
  "ark-bn254",
  "ark-ec",
- "ark-ed-on-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-ed-on-bls12-377",
  "ark-ed-on-bls12-381",
  "ark-ed-on-bn254",
  "ark-ff",
@@ -3234,10 +3229,10 @@ dependencies = [
  "derivative",
  "displaydoc",
  "itertools 0.10.3",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-primitives 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-plonk",
+ "jf-primitives",
+ "jf-rescue",
+ "jf-utils",
  "num_cpus",
  "percentage",
  "rand 0.8.4",
@@ -3255,45 +3250,14 @@ dependencies = [
 [[package]]
 name = "jf-plonk"
 version = "0.0.1"
-source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main#af112cf134052037856dc1915967a56d5399d208"
-dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-bls12-381",
- "ark-bn254",
- "ark-bw6-761 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ec",
- "ark-ed-on-bls12-381-bandersnatch 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ff",
- "ark-poly",
- "ark-poly-commit",
- "ark-serialize",
- "ark-std",
- "derivative",
- "displaydoc",
- "downcast-rs",
- "itertools 0.10.3",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "merlin",
- "num-bigint 0.4.3",
- "rand_chacha 0.3.1",
- "rayon",
- "serde",
- "sha3",
- "thiserror",
-]
-
-[[package]]
-name = "jf-plonk"
-version = "0.0.1"
 source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c#2a40d01c938cdcc716071af5a0dc9b3242181c2c"
 dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-bls12-381",
  "ark-bn254",
- "ark-bw6-761 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bw6-761",
  "ark-ec",
- "ark-ed-on-bls12-381-bandersnatch 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-ed-on-bls12-381-bandersnatch",
  "ark-ff",
  "ark-poly",
  "ark-poly-commit",
@@ -3303,8 +3267,8 @@ dependencies = [
  "displaydoc",
  "downcast-rs",
  "itertools 0.10.3",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-rescue",
+ "jf-utils",
  "merlin",
  "num-bigint 0.4.3",
  "rand_chacha 0.3.1",
@@ -3317,39 +3281,16 @@ dependencies = [
 [[package]]
 name = "jf-primitives"
 version = "0.0.1"
-source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main#af112cf134052037856dc1915967a56d5399d208"
-dependencies = [
- "ark-ec",
- "ark-ff",
- "ark-serialize",
- "ark-std",
- "crypto_box",
- "derivative",
- "displaydoc",
- "generic-array 0.14.4",
- "itertools 0.10.3",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "rayon",
- "serde",
- "thiserror",
- "zeroize",
-]
-
-[[package]]
-name = "jf-primitives"
-version = "0.0.1"
 source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c#2a40d01c938cdcc716071af5a0dc9b3242181c2c"
 dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-bls12-381",
  "ark-bn254",
- "ark-bw6-761 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bw6-761",
  "ark-ec",
- "ark-ed-on-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-ed-on-bls12-377",
  "ark-ed-on-bls12-381",
- "ark-ed-on-bls12-381-bandersnatch 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-ed-on-bls12-381-bandersnatch",
  "ark-ed-on-bn254",
  "ark-ff",
  "ark-serialize",
@@ -3359,37 +3300,9 @@ dependencies = [
  "displaydoc",
  "generic-array 0.14.4",
  "itertools 0.10.3",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-rescue 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "rayon",
- "serde",
- "thiserror",
- "zeroize",
-]
-
-[[package]]
-name = "jf-rescue"
-version = "0.0.1"
-source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main#af112cf134052037856dc1915967a56d5399d208"
-dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-bls12-381",
- "ark-bn254",
- "ark-bw6-761 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ec",
- "ark-ed-on-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves?rev=677b4ae751a274037880ede86e9b6f30f62635af)",
- "ark-ed-on-bls12-381",
- "ark-ed-on-bn254",
- "ark-ff",
- "ark-serialize",
- "ark-std",
- "crypto_box",
- "derivative",
- "displaydoc",
- "generic-array 0.14.4",
- "itertools 0.10.3",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
+ "jf-plonk",
+ "jf-rescue",
+ "jf-utils",
  "rayon",
  "serde",
  "thiserror",
@@ -3401,12 +3314,12 @@ name = "jf-rescue"
 version = "0.0.1"
 source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c#2a40d01c938cdcc716071af5a0dc9b3242181c2c"
 dependencies = [
- "ark-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bls12-377",
  "ark-bls12-381",
  "ark-bn254",
- "ark-bw6-761 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-bw6-761",
  "ark-ec",
- "ark-ed-on-bls12-377 0.3.0 (git+https://github.com/arkworks-rs/curves)",
+ "ark-ed-on-bls12-377",
  "ark-ed-on-bls12-381",
  "ark-ed-on-bn254",
  "ark-ff",
@@ -3417,28 +3330,11 @@ dependencies = [
  "displaydoc",
  "generic-array 0.14.4",
  "itertools 0.10.3",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-utils",
  "rayon",
  "serde",
  "thiserror",
  "zeroize",
-]
-
-[[package]]
-name = "jf-utils"
-version = "0.0.1"
-source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main#af112cf134052037856dc1915967a56d5399d208"
-dependencies = [
- "anyhow",
- "ark-ec",
- "ark-ff",
- "ark-serialize",
- "ark-std",
- "digest 0.9.0",
- "jf-utils-derive 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "serde",
- "sha2 0.9.8",
- "tagged-base64",
 ]
 
 [[package]]
@@ -3452,21 +3348,10 @@ dependencies = [
  "ark-serialize",
  "ark-std",
  "digest 0.9.0",
- "jf-utils-derive 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-utils-derive",
  "serde",
  "sha2 0.9.8",
  "tagged-base64",
-]
-
-[[package]]
-name = "jf-utils-derive"
-version = "0.1.0"
-source = "git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main#af112cf134052037856dc1915967a56d5399d208"
-dependencies = [
- "ark-serialize",
- "ark-std",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -3591,6 +3476,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matchers"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
+dependencies = [
+ "regex-automata",
+]
+
+[[package]]
 name = "matches"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3688,45 +3582,6 @@ checksum = "29fae0e4c0b155d3b019a7cbc27abe4a90e15c06814d27889ce9f5f44e2faf77"
 dependencies = [
  "byteorder",
  "lazy_static",
-]
-
-[[package]]
-name = "multi_machine"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "async-trait",
- "async-tungstenite 0.15.0",
- "bincode",
- "futures",
- "futures-util",
- "itertools 0.10.3",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "jf-primitives 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?branch=main)",
- "markdown",
- "phaselock 0.0.5-dev",
- "procfs",
- "rand_chacha 0.2.2",
- "serde",
- "serde_derive",
- "serde_json",
- "shellexpand",
- "snafu",
- "structopt",
- "strum",
- "strum_macros",
- "surf",
- "tagged-base64",
- "tempdir",
- "threshold_crypto",
- "tide",
- "tide-websockets",
- "toml",
- "tracing",
- "tracing-distributed",
- "tracing-futures",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -4114,33 +3969,6 @@ checksum = "e9567389417feee6ce15dd6527a8a1ecac205ef62c2932bcf3d9f6fc5b78b414"
 dependencies = [
  "futures",
  "rustc_version 0.4.0",
-]
-
-[[package]]
-name = "phaselock"
-version = "0.0.5-dev"
-source = "git+ssh://git@github.com/SpectrumXYZ/phaselock.git?branch=main#7487789a26b1e9034b62c3ca1ce4befcf31d7f31"
-dependencies = [
- "ark-ec",
- "ark-ed-on-bls12-381",
- "async-std",
- "async-tungstenite 0.16.1",
- "bincode",
- "blake3 1.2.0",
- "byteorder",
- "dashmap",
- "flume 0.10.9",
- "futures",
- "hex_fmt",
- "rand 0.7.3",
- "rand_chacha 0.2.2",
- "serde",
- "snafu",
- "threshold_crypto",
- "tracing",
- "tracing-error",
- "tracing-futures",
- "tracing-unwrap",
 ]
 
 [[package]]
@@ -4635,7 +4463,7 @@ dependencies = [
  "dirs",
  "ethers 0.6.0 (git+https://github.com/gakonst/ethers-rs?branch=master)",
  "jf-aap",
- "jf-primitives 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-primitives",
  "lazy_static",
  "rand_chacha 0.3.1",
  "serde",
@@ -4647,7 +4475,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber 0.3.3",
- "zerok_lib",
+ "zerok_lib 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/spectrum.git?rev=4fec6c5ba8d15df94955195796cd016afc6cb232)",
 ]
 
 [[package]]
@@ -5897,7 +5725,7 @@ dependencies = [
  "ansi_term",
  "chrono",
  "lazy_static",
- "matchers",
+ "matchers 0.0.1",
  "regex",
  "serde",
  "serde_json",
@@ -5917,11 +5745,38 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245da694cc7fc4729f3f418b304cb57789f1bed2a78c575407ab8a23f53cb4d3"
 dependencies = [
  "ansi_term",
+ "lazy_static",
+ "matchers 0.1.0",
+ "regex",
  "sharded-slab",
  "smallvec",
  "thread_local",
+ "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tracing-test"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eb7bda2e93bbc9c5b247034acc6a4b3d04f033a3d4b8fc1cb87d4d1c7c7ebd7"
+dependencies = [
+ "lazy_static",
+ "tracing-core",
+ "tracing-subscriber 0.3.3",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4801dca35e4e2cee957c469bd4a1c370fadb7894c0d50721a40eba3523e6e91c"
+dependencies = [
+ "lazy_static",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -6478,11 +6333,78 @@ dependencies = [
 [[package]]
 name = "zerok-macros"
 version = "0.1.0"
+source = "git+ssh://git@github.com/SpectrumXYZ/spectrum.git?branch=jeb-wallet-api#582b4e5a15c6b96ede1859c8de22f7489936bf9a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "zerok-macros"
+version = "0.1.0"
 source = "git+ssh://git@github.com/SpectrumXYZ/spectrum.git?rev=4fec6c5ba8d15df94955195796cd016afc6cb232#4fec6c5ba8d15df94955195796cd016afc6cb232"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "zerok_lib"
+version = "0.1.0"
+source = "git+ssh://git@github.com/SpectrumXYZ/spectrum.git?branch=jeb-wallet-api#582b4e5a15c6b96ede1859c8de22f7489936bf9a"
+dependencies = [
+ "arbitrary",
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
+ "async-scoped",
+ "async-std",
+ "async-trait",
+ "async-tungstenite 0.15.0",
+ "async_executors",
+ "atomic_store",
+ "bincode",
+ "bitvec 0.20.4",
+ "chacha20 0.8.1",
+ "chrono",
+ "futures",
+ "generic-array 0.14.4",
+ "hex",
+ "hmac 0.11.0",
+ "itertools 0.10.3",
+ "jf-aap",
+ "jf-plonk",
+ "jf-primitives",
+ "jf-utils",
+ "lazy_static",
+ "mnemonic",
+ "phaselock",
+ "procfs",
+ "rand 0.7.3",
+ "rand_chacha 0.3.1",
+ "rayon",
+ "rpassword",
+ "rust-argon2",
+ "rustyline",
+ "serde",
+ "serde_cbor",
+ "serde_derive",
+ "serde_json",
+ "serde_with",
+ "sha3",
+ "snafu",
+ "strum",
+ "strum_macros",
+ "surf",
+ "tagged-base64",
+ "tempdir",
+ "threshold_crypto",
+ "tide",
+ "tracing",
+ "zeroize",
+ "zerok-macros 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/spectrum.git?branch=jeb-wallet-api)",
 ]
 
 [[package]]
@@ -6510,12 +6432,12 @@ dependencies = [
  "hmac 0.11.0",
  "itertools 0.10.3",
  "jf-aap",
- "jf-plonk 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-primitives 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
- "jf-utils 0.0.1 (git+ssh://git@github.com/SpectrumXYZ/jellyfish.git?rev=2a40d01c938cdcc716071af5a0dc9b3242181c2c)",
+ "jf-plonk",
+ "jf-primitives",
+ "jf-utils",
  "lazy_static",
  "mnemonic",
- "phaselock 0.0.5",
+ "phaselock",
  "procfs",
  "rand 0.7.3",
  "rand_chacha 0.3.1",
@@ -6539,5 +6461,5 @@ dependencies = [
  "tide",
  "tracing",
  "zeroize",
- "zerok-macros",
+ "zerok-macros 0.1.0 (git+ssh://git@github.com/SpectrumXYZ/spectrum.git?rev=4fec6c5ba8d15df94955195796cd016afc6cb232)",
 ]
