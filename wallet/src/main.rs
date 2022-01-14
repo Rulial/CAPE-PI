@@ -1,7 +1,8 @@
 // Copyright © 2021 Translucence Research, Inc. All rights reserved.
 
 use crate::routes::{
-    dispatch_url, dispatch_web_socket, RouteBinding, UrlSegmentType, UrlSegmentValue, Wallet,
+    dispatch_url, dispatch_web_socket, BackendAdapter, MockBackendAdapter, RouteBinding,
+    UrlSegmentType, UrlSegmentValue,
 };
 use async_std::{
     sync::{Arc, Mutex},
@@ -13,7 +14,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 use tide::StatusCode;
 use tide_websockets::{WebSocket, WebSocketConnection};
-use zerok_lib::api::server;
+use zerok_lib::{api::server, wallet::cape::CapeWallet};
 
 mod disco;
 mod ip;
@@ -71,14 +72,27 @@ fn default_api_path() -> PathBuf {
     [&dir, Path::new(API_FILE)].iter().collect()
 }
 
-#[derive(Clone)]
-pub struct WebState {
+pub struct WebState<Adapter: BackendAdapter> {
     web_path: PathBuf,
     api: toml::Value,
-    wallet: Arc<Mutex<Option<Wallet>>>,
+    wallet: Arc<Mutex<Option<CapeWallet<'static, Adapter::Backend>>>>,
+    adapter: Adapter,
 }
 
-async fn form_demonstration(req: tide::Request<WebState>) -> Result<tide::Body, tide::Error> {
+impl<Adapter: BackendAdapter> Clone for WebState<Adapter> {
+    fn clone(&self) -> Self {
+        Self {
+            web_path: self.web_path.clone(),
+            api: self.api.clone(),
+            wallet: self.wallet.clone(),
+            adapter: self.adapter.clone(),
+        }
+    }
+}
+
+async fn form_demonstration(
+    req: tide::Request<WebState<impl BackendAdapter>>,
+) -> Result<tide::Body, tide::Error> {
     let mut index_html: PathBuf = req.state().web_path.clone();
     index_html.push("index.html");
     Ok(tide::Body::from_file(index_html).await?)
@@ -87,7 +101,7 @@ async fn form_demonstration(req: tide::Request<WebState>) -> Result<tide::Body, 
 // Get the route pattern that matches the URL of a request, and the bindings for parameters in the
 // pattern. If no route matches, the error is a documentation string explaining what went wrong.
 fn parse_route(
-    req: &tide::Request<WebState>,
+    req: &tide::Request<WebState<impl BackendAdapter>>,
 ) -> Result<(String, HashMap<String, RouteBinding>), String> {
     let first_segment = &req
         .url()
@@ -212,7 +226,9 @@ fn parse_route(
 /// This function duplicates the logic for deciding which route was requested. This
 /// is an unfortunate side-effect of defining the routes in an external file.
 // todo !corbett Convert the error feedback into HTML
-async fn entry_page(req: tide::Request<WebState>) -> Result<tide::Response, tide::Error> {
+async fn entry_page(
+    req: tide::Request<WebState<impl BackendAdapter>>,
+) -> Result<tide::Response, tide::Error> {
     match parse_route(&req) {
         Ok((pattern, bindings)) => dispatch_url(req, pattern.as_str(), &bindings).await,
         Err(arg_doc) => Ok(tide::Response::builder(200).body(arg_doc).build()),
@@ -220,7 +236,7 @@ async fn entry_page(req: tide::Request<WebState>) -> Result<tide::Response, tide
 }
 
 async fn handle_web_socket(
-    req: tide::Request<WebState>,
+    req: tide::Request<WebState<impl BackendAdapter>>,
     wsc: WebSocketConnection,
 ) -> tide::Result<()> {
     match parse_route(&req) {
@@ -231,23 +247,25 @@ async fn handle_web_socket(
 
 // This route is a demonstration of a form with a WebSocket connection
 // for asynchronous updates. Once we have useful forms, this can go...
-fn add_form_demonstration(web_server: &mut tide::Server<WebState>) {
+fn add_form_demonstration(web_server: &mut tide::Server<WebState<impl 'static + BackendAdapter>>) {
     web_server
         .at("/transfer/:id/:recipient/:amount")
         .with(WebSocket::new(handle_web_socket))
         .get(form_demonstration);
 }
 
-fn init_server(
+fn init_server<Adapter: 'static + BackendAdapter>(
     api_path: PathBuf,
     web_path: PathBuf,
     port: u64,
+    adapter: Adapter,
 ) -> std::io::Result<JoinHandle<std::io::Result<()>>> {
     let api = disco::load_messages(&api_path);
     let mut web_server = tide::with_state(WebState {
         web_path: web_path.clone(),
         api: api.clone(),
         wallet: Arc::new(Mutex::new(None)),
+        adapter,
     });
     web_server.with(server::trace).with(server::add_error_body);
 
@@ -329,7 +347,14 @@ async fn main() -> Result<(), std::io::Error> {
 
     // Use something different than the default Spectrum port (60000 vs 50000).
     let port = std::env::var("PORT").unwrap_or_else(|_| String::from("60000"));
-    init_server(api_path, web_path, port.parse().unwrap())?.await?;
+    // TODO replace the mock backend with a real backend.
+    init_server(
+        api_path,
+        web_path,
+        port.parse().unwrap(),
+        MockBackendAdapter::default(),
+    )?
+    .await?;
 
     Ok(())
 }
@@ -380,7 +405,12 @@ mod tests {
             // the server will continue running until the process is killed, even after the test
             // ends. This is probably not so bad, since each test's server task should be idle once
             // the test is over, and anyways I don't see a good way around it.
-            init_server(default_api_path(), default_web_path(), port).unwrap();
+            init_server::<MockCapeBackend<'static, LoaderMetadata>>(
+                default_api_path(),
+                default_web_path(),
+                port,
+            )
+            .unwrap();
 
             let client: surf::Client = surf::Config::new()
                 .set_base_url(Url::parse(&format!("http://localhost:{}", port)).unwrap())

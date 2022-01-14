@@ -1102,6 +1102,7 @@ name = "cape_wallet"
 version = "0.1.0"
 dependencies = [
  "async-std",
+ "async-trait",
  "bincode",
  "futures",
  "futures-util",

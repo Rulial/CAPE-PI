@@ -1,6 +1,6 @@
 // Copyright © 2021 Translucence Research, Inc. All rights reserved.
 
-use crate::routes::check_api;
+use crate::routes::{check_api, BackendAdapter};
 use crate::WebState;
 use std::fs::read_to_string;
 use std::path::Path;
@@ -20,7 +20,9 @@ pub fn load_messages(path: &Path) -> toml::Value {
 /// a documentation page for the web API.
 ///
 /// The results of this could be precomputed and cached.
-pub async fn compose_help(req: tide::Request<WebState>) -> Result<tide::Response, tide::Error> {
+pub async fn compose_help(
+    req: tide::Request<WebState<impl BackendAdapter>>,
+) -> Result<tide::Response, tide::Error> {
     let api = &req.state().api;
     let meta = &api["meta"];
     let mut help = meta["HTML_TOP"]

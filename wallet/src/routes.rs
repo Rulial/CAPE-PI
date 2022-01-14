@@ -2,6 +2,7 @@
 
 use crate::WebState;
 use async_std::sync::{Arc, Mutex};
+use async_trait::async_trait;
 use jf_aap::{MerkleTree, TransactionVerifyingKey};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -14,18 +15,15 @@ use tide::StatusCode;
 use tide_websockets::WebSocketConnection;
 use zerok_lib::{
     api::server::response,
-    cape_ledger::CapeLedger,
     state::{key_set::KeySet, VerifierKeySet, MERKLE_HEIGHT},
     universal_params::UNIVERSAL_PARAM,
-    wallet,
     wallet::{
+        cape::{CapeWallet, CapeWalletBackend},
         loader::{Loader, LoaderMetadata},
         testing::mocks::{MockCapeBackend, MockCapeNetwork, MockLedger},
         WalletBackend, WalletError, WalletStorage,
     },
 };
-
-pub type Wallet = wallet::Wallet<'static, MockCapeBackend<'static, LoaderMetadata>, CapeLedger>;
 
 #[derive(Clone, Copy, Debug, EnumString)]
 pub enum UrlSegmentType {
@@ -155,6 +153,65 @@ pub enum ApiRouteKey {
     wrap,
 }
 
+#[async_trait]
+pub trait BackendAdapter: Clone + Send + Sync {
+    type Backend: 'static + CapeWalletBackend<'static> + Send + Sync;
+    async fn create(
+        &self,
+        mnemonic: String,
+        storage: PathBuf,
+    ) -> Result<Self::Backend, WalletError>;
+}
+
+// TODO move this into a #[cfg(test)] block once the main server has been switched to a real backend.
+#[derive(Clone, Copy, Default)]
+pub struct MockBackendAdapter;
+
+#[async_trait]
+impl BackendAdapter for MockBackendAdapter {
+    type Backend = MockCapeBackend<'static, LoaderMetadata>;
+
+    async fn create(
+        &self,
+        mnemonic: String,
+        storage: PathBuf,
+    ) -> Result<Self::Backend, WalletError> {
+        let verif_crs = VerifierKeySet {
+            mint: TransactionVerifyingKey::Mint(
+                jf_aap::proof::mint::preprocess(&*UNIVERSAL_PARAM, MERKLE_HEIGHT)
+                    .map_err(|source| WalletError::CryptoError { source })?
+                    .1,
+            ),
+            xfr: KeySet::new(
+                vec![TransactionVerifyingKey::Transfer(
+                    jf_aap::proof::transfer::preprocess(&*UNIVERSAL_PARAM, 3, 3, MERKLE_HEIGHT)
+                        .map_err(|source| WalletError::CryptoError { source })?
+                        .1,
+                )]
+                .into_iter(),
+            )
+            .unwrap(),
+            freeze: KeySet::new(
+                vec![TransactionVerifyingKey::Freeze(
+                    jf_aap::proof::freeze::preprocess(&*UNIVERSAL_PARAM, 2, MERKLE_HEIGHT)
+                        .map_err(|source| WalletError::CryptoError { source })?
+                        .1,
+                )]
+                .into_iter(),
+            )
+            .unwrap(),
+        };
+        //TODO replace this mock backend with a connection to a real backend when available.
+        let ledger = Arc::new(Mutex::new(MockLedger::new(MockCapeNetwork::new(
+            verif_crs,
+            MerkleTree::new(MERKLE_HEIGHT).unwrap(),
+            vec![],
+        ))));
+        let mut loader = Loader::from_mnemonic(mnemonic, true, storage);
+        MockCapeBackend::new(ledger.clone(), &mut loader)
+    }
+}
+
 /// Verifiy that every variant of enum ApiRouteKey is defined in api.toml
 // TODO !corbett Check all the other things that might fail after startup.
 pub fn check_api(api: toml::Value) -> bool {
@@ -203,11 +260,12 @@ fn wallet_error(source: WalletError) -> tide::Error {
     tide::Error::from_str(StatusCode::InternalServerError, source.to_string())
 }
 
-pub async fn open_wallet(
+pub async fn open_wallet<Adapter: BackendAdapter>(
+    adapter: &Adapter,
     mnemonic: String,
     path: Option<PathBuf>,
     existing: bool,
-) -> Result<Wallet, tide::Error> {
+) -> Result<CapeWallet<'static, Adapter::Backend>, tide::Error> {
     let path = match path {
         Some(path) => path,
         None => {
@@ -224,34 +282,7 @@ pub async fn open_wallet(
         }
     };
 
-    let verif_crs = VerifierKeySet {
-        mint: TransactionVerifyingKey::Mint(
-            jf_aap::proof::mint::preprocess(&*UNIVERSAL_PARAM, MERKLE_HEIGHT)?.1,
-        ),
-        xfr: KeySet::new(
-            vec![TransactionVerifyingKey::Transfer(
-                jf_aap::proof::transfer::preprocess(&*UNIVERSAL_PARAM, 3, 3, MERKLE_HEIGHT)?.1,
-            )]
-            .into_iter(),
-        )
-        .unwrap(),
-        freeze: KeySet::new(
-            vec![TransactionVerifyingKey::Freeze(
-                jf_aap::proof::freeze::preprocess(&*UNIVERSAL_PARAM, 2, MERKLE_HEIGHT)?.1,
-            )]
-            .into_iter(),
-        )
-        .unwrap(),
-    };
-    //TODO replace this mock backend with a connection to a real backend when available.
-    let ledger = Arc::new(Mutex::new(MockLedger::new(MockCapeNetwork::new(
-        verif_crs,
-        MerkleTree::new(MERKLE_HEIGHT).unwrap(),
-        vec![],
-    ))));
-    let mut loader = Loader::from_mnemonic(mnemonic, true, path);
-    let mut backend = MockCapeBackend::new(ledger.clone(), &mut loader)?;
-
+    let mut backend = adapter.create(mnemonic, path).await.map_err(wallet_error)?;
     if backend.storage().await.exists() != existing {
         return Err(tide::Error::from_str(
             StatusCode::BadRequest,
@@ -263,10 +294,10 @@ pub async fn open_wallet(
         ));
     }
 
-    Wallet::new(backend).await.map_err(wallet_error)
+    CapeWallet::new(backend).await.map_err(wallet_error)
 }
 
-fn require_wallet(wallet: &mut Option<Wallet>) -> Result<&mut Wallet, tide::Error> {
+fn require_wallet<Wallet>(wallet: &mut Option<Wallet>) -> Result<&mut Wallet, tide::Error> {
     wallet.as_mut().ok_or_else(|| {
         tide::Error::from_str(
             StatusCode::BadRequest,
@@ -284,9 +315,10 @@ fn require_wallet(wallet: &mut Option<Wallet>) -> Result<&mut Wallet, tide::Erro
 // and building a Response object.
 //
 
-pub async fn newwallet(
+pub async fn newwallet<Adapter: BackendAdapter>(
     bindings: &HashMap<String, RouteBinding>,
-    wallet: &mut Option<Wallet>,
+    wallet: &mut Option<CapeWallet<'static, Adapter::Backend>>,
+    adapter: &Adapter,
 ) -> Result<(), tide::Error> {
     let path = match bindings.get(":path") {
         Some(binding) => Some(binding.value.as_path()?),
@@ -298,13 +330,14 @@ pub async fn newwallet(
     // with two wallets using the same file at the same time.
     *wallet = None;
 
-    *wallet = Some(open_wallet(mnemonic, path, false).await?);
+    *wallet = Some(open_wallet(adapter, mnemonic, path, false).await?);
     Ok(())
 }
 
-pub async fn openwallet(
+pub async fn openwallet<Adapter: BackendAdapter>(
     bindings: &HashMap<String, RouteBinding>,
-    wallet: &mut Option<Wallet>,
+    wallet: &mut Option<CapeWallet<'static, Adapter::Backend>>,
+    adapter: &Adapter,
 ) -> Result<(), tide::Error> {
     let path = match bindings.get(":path") {
         Some(binding) => Some(binding.value.as_path()?),
@@ -316,18 +349,18 @@ pub async fn openwallet(
     // with two wallets using the same file at the same time.
     *wallet = None;
 
-    *wallet = Some(open_wallet(mnemonic, path, true).await?);
+    *wallet = Some(open_wallet(adapter, mnemonic, path, true).await?);
     Ok(())
 }
 
-async fn closewallet(wallet: &mut Option<Wallet>) -> Result<(), tide::Error> {
+async fn closewallet<Wallet>(wallet: &mut Option<Wallet>) -> Result<(), tide::Error> {
     require_wallet(wallet)?;
     *wallet = None;
     Ok(())
 }
 
-pub async fn dispatch_url(
-    req: tide::Request<WebState>,
+pub async fn dispatch_url<Adapter: BackendAdapter>(
+    req: tide::Request<WebState<Adapter>>,
     route_pattern: &str,
     bindings: &HashMap<String, RouteBinding>,
 ) -> Result<tide::Response, tide::Error> {
@@ -335,7 +368,9 @@ pub async fn dispatch_url(
         .split_once('/')
         .unwrap_or((route_pattern, ""))
         .0;
-    let wallet = &mut *req.state().wallet.lock().await;
+    let state = req.state();
+    let wallet = &mut *state.wallet.lock().await;
+    let adapter = &state.adapter;
     let key = ApiRouteKey::from_str(first_segment).expect("Unknown route");
     match key {
         ApiRouteKey::closewallet => response(&req, closewallet(wallet).await?),
@@ -348,8 +383,8 @@ pub async fn dispatch_url(
         ApiRouteKey::mint => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::newasset => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::newkey => dummy_url_eval(route_pattern, bindings),
-        ApiRouteKey::newwallet => response(&req, newwallet(bindings, wallet).await?),
-        ApiRouteKey::openwallet => response(&req, openwallet(bindings, wallet).await?),
+        ApiRouteKey::newwallet => response(&req, newwallet(bindings, wallet, adapter).await?),
+        ApiRouteKey::openwallet => response(&req, openwallet(bindings, wallet, adapter).await?),
         ApiRouteKey::send => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::trace => dummy_url_eval(route_pattern, bindings),
         ApiRouteKey::transaction => dummy_url_eval(route_pattern, bindings),
@@ -360,7 +395,7 @@ pub async fn dispatch_url(
 }
 
 pub async fn dispatch_web_socket(
-    _req: tide::Request<WebState>,
+    _req: tide::Request<WebState<impl BackendAdapter>>,
     _conn: WebSocketConnection,
     route_pattern: &str,
     _bindings: &HashMap<String, RouteBinding>,
