@@ -1096,8 +1096,11 @@ name = "cape_wallet"
 version = "0.1.0"
 dependencies = [
  "address_book",
+ "anyhow",
+ "ark-ed-on-bn254",
  "async-std",
  "async-trait",
+ "atomic_store 0.0.2 (registry+https://dl.cloudsmith.io/basic/translucence/tl/cargo/index.git)",
  "bincode",
  "cap-rust-sandbox",
  "escargot",

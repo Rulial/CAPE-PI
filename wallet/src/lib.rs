@@ -3,6 +3,7 @@ pub mod cli_client;
 pub mod disco;
 pub mod mocks;
 pub mod routes;
+pub mod simple_backend;
 pub mod wallet;
 pub mod web;
 

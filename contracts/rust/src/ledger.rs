@@ -185,7 +185,7 @@ impl ValidationError for CapeValidationError {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CapeBlock(Vec<CapeTransition>);
+pub struct CapeBlock(pub Vec<CapeTransition>);
 
 impl Committable for CapeBlock {
     fn commit(&self) -> Commitment<Self> {

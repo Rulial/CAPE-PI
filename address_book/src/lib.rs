@@ -73,7 +73,7 @@ pub async fn wait_for_server() {
 /// Lookup a user public key from a signed public key address. Fail with
 /// tide::StatusCode::BadRequest if key deserialization or the signature check
 /// fail.
-fn verify_sig_and_get_pub_key(insert_request: InsertPubKey) -> Result<UserPubKey, tide::Error> {
+pub fn verify_sig_and_get_pub_key(insert_request: InsertPubKey) -> Result<UserPubKey, tide::Error> {
     let pub_key: UserPubKey = bincode::deserialize(&insert_request.pub_key_bytes)
         .map_err(|e| tide::Error::new(tide::StatusCode::BadRequest, e))?;
     pub_key

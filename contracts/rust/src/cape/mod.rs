@@ -194,6 +194,52 @@ impl CapeBlock {
         outputs_record_commitments
     }
 
+    pub fn to_cape_transactions(self) -> Option<(Vec<CapeModelTxn>, UserAddress)> {
+        let note_types = self.note_types.into_iter();
+        let mut transfer_notes = self.transfer_notes.into_iter();
+        let mut mint_notes = self.mint_notes.into_iter();
+        let mut freeze_notes = self.freeze_notes.into_iter();
+        let mut burn_notes = self.burn_notes.into_iter();
+
+        let mut ret = vec![];
+
+        for nt in note_types {
+            match nt {
+                NoteType::Transfer => {
+                    ret.push(CapeModelTxn::CAP(TransactionNote::Transfer(Box::new(
+                        transfer_notes.next()?,
+                    ))));
+                }
+                NoteType::Mint => {
+                    ret.push(CapeModelTxn::CAP(TransactionNote::Mint(Box::new(
+                        mint_notes.next()?,
+                    ))));
+                }
+                NoteType::Freeze => {
+                    ret.push(CapeModelTxn::CAP(TransactionNote::Freeze(Box::new(
+                        freeze_notes.next()?,
+                    ))));
+                }
+                NoteType::Burn => {
+                    let burn_note = burn_notes.next()?;
+                    ret.push(CapeModelTxn::Burn {
+                        xfr: Box::new(burn_note.transfer_note),
+                        ro: Box::new(burn_note.burned_ro),
+                    });
+                }
+            }
+        }
+        if transfer_notes.next().is_some()
+            || mint_notes.next().is_some()
+            || freeze_notes.next().is_some()
+            || burn_notes.next().is_some()
+        {
+            None
+        } else {
+            Some((ret, self.miner_addr))
+        }
+    }
+
     pub fn from_cape_transactions(
         transactions: Vec<CapeModelTxn>,
         miner: UserAddress,
