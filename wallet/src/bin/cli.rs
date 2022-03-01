@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The CAPE Wallet Frontend
 //
-// For now, this "frontend" is simply a comand-line read-eval-print loop which
+// For now, this "frontend" is simply a command-line read-eval-print loop which
 // allows the user to enter commands for a wallet interactively.
 //
 
@@ -27,7 +27,7 @@ use reef::Ledger;
 use seahorse::{
     cli::*,
     io::SharedIO,
-    loader::{LoadMethod, LoaderMetadata, WalletLoader},
+    loader::{LoaderMetadata, WalletLoader},
     testing::MockLedger,
     WalletError,
 };
@@ -274,20 +274,6 @@ pub struct CapeArgs {
     #[structopt(short, long)]
     pub storage: Option<PathBuf>,
 
-    /// Store the contents of the wallet in plaintext.
-    ///
-    /// You will not require a password to access your wallet, and your wallet will not be protected
-    /// from malicious software that gains access to a device where you loaded your wallet.
-    ///
-    /// This option is only available when creating a new wallet. When loading an existing wallet, a
-    /// password will always be required if the wallet was created without the --unencrypted flag.
-    #[structopt(long)]
-    pub unencrypted: bool,
-
-    /// Load the wallet using a password and salt, rather than a mnemonic phrase.
-    #[structopt(long)]
-    pub password: bool,
-
     /// Create a new wallet and store it an a temporary location which will be deleted on exit.
     ///
     /// This option is mutually exclusive with --storage.
@@ -318,18 +304,6 @@ impl CLIArgs for CapeArgs {
             Some(SharedIO::std())
         } else {
             None
-        }
-    }
-
-    fn encrypted(&self) -> bool {
-        !self.unencrypted
-    }
-
-    fn load_method(&self) -> LoadMethod {
-        if self.password {
-            LoadMethod::Password
-        } else {
-            LoadMethod::Mnemonic
         }
     }
 
@@ -370,6 +344,7 @@ mod tests {
         hd, io::Tee, persistence::AtomicWalletStorage, testing::cli_match::*,
         testing::SystemUnderTest, WalletBackend,
     };
+    use std::io::BufRead;
     use std::time::Instant;
 
     pub struct MockCapeCli;
@@ -473,12 +448,6 @@ mod tests {
         fn io(&self) -> Option<SharedIO> {
             Some(self.io.clone())
         }
-        fn encrypted(&self) -> bool {
-            true
-        }
-        fn load_method(&self) -> LoadMethod {
-            LoadMethod::Mnemonic
-        }
         fn use_tmp_storage(&self) -> bool {
             true
         }
@@ -523,9 +492,22 @@ mod tests {
         });
 
         // Wait for the CLI to start up and then return the input and output pipes.
-        let input = Tee::new(input);
+        let mut input = Tee::new(input);
         let mut output = Tee::new(output);
         wait_for_prompt(&mut output);
+
+        // Accept the generated mnemonic.
+        writeln!(input, "1").unwrap();
+        // Instead of a ">" prompt, the wallet will ask us to create a password, so
+        // `wait_for_prompt` doesn't work, we just need to consume a line of output.
+        output.read_line(&mut String::new()).unwrap();
+        // Create a password.
+        writeln!(input, "test-password").unwrap();
+        output.read_line(&mut String::new()).unwrap();
+        // Confirm password.
+        writeln!(input, "test-password").unwrap();
+        wait_for_prompt(&mut output);
+
         (input, output)
     }
 
@@ -639,7 +621,7 @@ mod tests {
     }
 
     // TODO !keyao Replace the use of `CliClient` with `CapeTest` and CLI matching helpers in
-    // Seahorse, simiar to `test_cli_burn`.
+    // Seahorse, similar to `test_cli_burn`.
     // Related issue: https://github.com/SpectrumXYZ/cape/issues/477.
     #[test]
     #[ignore]
@@ -656,7 +638,7 @@ mod tests {
     }
 
     // TODO !keyao Replace the use of `CliClient` with `CapeTest` and CLI matching helpers in
-    // Seahorse, simiar to `test_cli_burn`.
+    // Seahorse, similar to `test_cli_burn`.
     // Related issue: https://github.com/SpectrumXYZ/cape/issues/477.
     #[test]
     #[ignore]
@@ -684,16 +666,10 @@ mod tests {
         // Create wallets for sponsor, wrapper and receiver.
         let (mut sponsor_input, mut sponsor_output) =
             create_cape_wallet(ledger.clone(), key_streams[0].clone());
-        writeln!(sponsor_input, "1").unwrap();
-        wait_for_prompt(&mut sponsor_output);
         let (mut wrapper_input, mut wrapper_output) =
             create_cape_wallet(ledger.clone(), key_streams[1].clone());
-        writeln!(wrapper_input, "1").unwrap();
-        wait_for_prompt(&mut wrapper_output);
         let (mut receiver_input, mut receiver_output) =
             create_cape_wallet(ledger.clone(), key_streams[2].clone());
-        writeln!(receiver_input, "1").unwrap();
-        wait_for_prompt(&mut receiver_output);
 
         // Get the freezer and auditor keys for the sponsor, and the receiver's addresses.
         writeln!(sponsor_input, "gen_key freeze").unwrap();

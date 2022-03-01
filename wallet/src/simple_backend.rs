@@ -8,13 +8,11 @@ use atomic_store::{
     RollingLog,
 };
 use cap_rust_sandbox::{
-    cape,
+    bindings as sol, cape,
     deploy::EthMiddleware,
     ledger,
     ledger::CapeTransition,
     model::{CapeModelTxn, Erc20Code, EthereumAddr},
-    types as sol,
-    types::{CAPEEvents, CAPE},
 };
 use core::cmp;
 use core::mem;
@@ -32,6 +30,7 @@ use net::server::{add_error_body, request_body, response};
 use reef::traits::Transaction;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
+use sol::{CAPEEvents, CAPE};
 use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 use std::path::Path;
