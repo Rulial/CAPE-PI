@@ -255,6 +255,75 @@ mod tests {
         Ok(())
     }
 
+    /// Submit two blocks, each with same num and type of txns
+    async fn submit_second_block(
+        num_transfer_tx: usize,
+        num_mint_tx: usize,
+        num_freeze_tx: usize,
+    ) -> Result<()> {
+        let contract = deploy_cape_test().await;
+        let rng = &mut ark_std::test_rng();
+
+        let params = TxnsParams::generate_txns(
+            rng,
+            num_transfer_tx,
+            num_mint_tx,
+            num_freeze_tx,
+            CapeLedger::merkle_height(),
+        );
+        let miner = UserPubKey::default();
+
+        let nf = params.txns[0].nullifiers()[0];
+        let root = params.txns[0].merkle_root();
+
+        let cape_block = CapeBlock::generate(params.txns.clone(), vec![], miner.address())?;
+
+        // Check that some nullifier is not yet inserted
+        assert!(
+            !contract
+                .nullifiers(nf.generic_into::<NullifierSol>().0)
+                .call()
+                .await?
+        );
+
+        // Set the root
+        contract
+            .add_root(root.generic_into::<MerkleRootSol>().0)
+            .send()
+            .await?
+            .await?;
+
+        // Submit to the contract
+        contract
+            .submit_cape_block(cape_block.into())
+            .send()
+            .await?
+            .await?;
+
+        // Check that now the nullifier has been inserted
+        assert!(
+            contract
+                .nullifiers(nf.generic_into::<NullifierSol>().0)
+                .call()
+                .await?
+        );
+
+        let next_txns = TxnsParams::generate_txns(
+            rng,
+            num_transfer_tx,
+            num_mint_tx,
+            num_freeze_tx,
+            CapeLedger::merkle_height(),
+        );
+        let next_block = CapeBlock::generate(next_txns.txns.clone(), vec![], miner.address())?;
+        contract
+            .submit_cape_block(next_block.into())
+            .send()
+            .await?
+            .await?;
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_submit_block_with_transfer_tx() -> Result<()> {
         submit_block_test_helper(1, 0, 0).await?;
@@ -264,6 +333,11 @@ mod tests {
     #[tokio::test]
     async fn test_submit_block_with_mint_tx() -> Result<()> {
         submit_block_test_helper(0, 1, 0).await?;
+        Ok(())
+    }
+    #[tokio::test]
+    async fn test_submit_two_blocks_with_mint_tx() -> Result<()> {
+        submit_second_block(0, 1, 0).await?;
         Ok(())
     }
 
