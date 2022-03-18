@@ -374,7 +374,7 @@ impl<'a, Meta: Serialize + DeserializeOwned + Send> CapeWalletBackend<'a>
 mod test {
     use super::*;
     use crate::testing::{
-        create_test_network, sponsor_simple_token, transfer_token, wrap_simple_token,
+        create_test_network, mint_token, sponsor_simple_token, transfer_token, wrap_simple_token,
     };
     use crate::{mocks::MockCapeWalletLoader, CapeWallet, CapeWalletExt};
     use cap_rust_sandbox::deploy::deploy_erc20_token;
@@ -386,6 +386,147 @@ mod test {
     use std::time::Duration;
     use tempdir::TempDir;
 
+    #[async_std::test]
+    async fn test_double_mint() {
+        let mut rng = ChaChaRng::from_seed([1u8; 32]);
+        let universal_param = universal_setup_for_test(2usize.pow(16), &mut rng).unwrap();
+        let (sender_key, relayer_url, contract_address, mock_eqs) =
+            create_test_network(&mut rng, &universal_param).await;
+
+        // Create a sender wallet and add the key pair that owns the faucet record.
+        let sender_dir = TempDir::new("cape_wallet_backend_test").unwrap();
+        let mut sender_loader = MockCapeWalletLoader {
+            path: PathBuf::from(sender_dir.path()),
+            key: hd::KeyTree::random(&mut rng).0,
+        };
+        let sender_backend = CapeBackend::new(
+            &universal_param,
+            relayer_url.clone(),
+            contract_address,
+            None,
+            mock_eqs.clone(),
+            &mut sender_loader,
+        )
+        .await
+        .unwrap();
+        let mut sender = CapeWallet::new(sender_backend).await.unwrap();
+        sender
+            .add_user_key(sender_key.clone(), "sender".into(), EventIndex::default())
+            .await
+            .unwrap();
+        sender.sync(mock_eqs.lock().await.now()).await.unwrap();
+        sender.await_key_scan(&sender_key.address()).await.unwrap();
+        let total_balance = sender
+            .balance_breakdown(&sender_key.address(), &AssetCode::native())
+            .await;
+        assert!(total_balance > 0);
+
+        let receiver_dir1 = TempDir::new("cape_wallet_backend_test1").unwrap();
+        let receiver_dir2 = TempDir::new("cape_wallet_backend_test2").unwrap();
+        let mut receiver_loader1 = MockCapeWalletLoader {
+            path: PathBuf::from(receiver_dir1.path()),
+            key: hd::KeyTree::random(&mut rng).0,
+        };
+        let mut receiver_loader2 = MockCapeWalletLoader {
+            path: PathBuf::from(receiver_dir2.path()),
+            key: hd::KeyTree::random(&mut rng).0,
+        };
+        let receiver_backend1 = CapeBackend::new(
+            &universal_param,
+            relayer_url.clone(),
+            contract_address,
+            None,
+            mock_eqs.clone(),
+            &mut receiver_loader1,
+        )
+        .await
+        .unwrap();
+        let receiver_backend2 = CapeBackend::new(
+            &universal_param,
+            relayer_url.clone(),
+            contract_address,
+            None,
+            mock_eqs.clone(),
+            &mut receiver_loader2,
+        )
+        .await
+        .unwrap();
+        let mut receiver1 = CapeWallet::new(receiver_backend1).await.unwrap();
+        let mut receiver2 = CapeWallet::new(receiver_backend2).await.unwrap();
+        let receiver_key1 = receiver1
+            .generate_user_key("receiver".into(), None)
+            .await
+            .unwrap();
+        receiver1
+            .generate_freeze_key("freezing account".into())
+            .await
+            .unwrap();
+        receiver1
+            .generate_audit_key("viewing account".into())
+            .await
+            .unwrap();
+        let receiver_key2 = receiver2
+            .generate_user_key("receiver".into(), None)
+            .await
+            .unwrap();
+        receiver2
+            .generate_freeze_key("freezing account".into())
+            .await
+            .unwrap();
+        receiver2
+            .generate_audit_key("viewing account".into())
+            .await
+            .unwrap();
+
+        // Transfer from sender to receivers.
+        let txn = transfer_token(
+            &mut sender,
+            receiver_key1.address(),
+            2,
+            AssetCode::native(),
+            1,
+        )
+        .await
+        .unwrap();
+        await_transaction(&txn, &sender, &[&receiver1]).await;
+
+        let txn = transfer_token(
+            &mut sender,
+            receiver_key2.address(),
+            2,
+            AssetCode::native(),
+            1,
+        )
+        .await
+        .unwrap();
+        await_transaction(&txn, &sender, &[&receiver2]).await;
+
+        let a1 = mint_token(&mut receiver1).await.unwrap();
+        let a2 = mint_token(&mut receiver2).await.unwrap();
+
+        // swap minted assets
+        let txn = transfer_token(
+            &mut receiver1,
+            receiver_key2.address(),
+            2,
+            a1.code.clone(),
+            1,
+        )
+        .await
+        .unwrap();
+        await_transaction(&txn, &receiver1, &[&receiver2]).await;
+
+        let txn = transfer_token(
+            &mut receiver2,
+            receiver_key1.address(),
+            2,
+            a2.code.clone(),
+            1,
+        )
+        .await
+        .unwrap();
+        await_transaction(&txn, &receiver2, &[&receiver1]).await;
+    }
     #[async_std::test]
     async fn test_transfer() {
         let mut rng = ChaChaRng::from_seed([1u8; 32]);
