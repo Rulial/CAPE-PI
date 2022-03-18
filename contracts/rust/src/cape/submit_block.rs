@@ -337,7 +337,7 @@ mod tests {
     }
     #[tokio::test]
     async fn test_submit_two_blocks_with_mint_tx() -> Result<()> {
-        submit_second_block(0, 1, 0).await?;
+        submit_second_block(1, 0, 0).await?;
         Ok(())
     }
 
