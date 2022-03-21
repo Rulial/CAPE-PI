@@ -60,6 +60,7 @@ struct NetworkInfo {
     relayer_url: Url,
     address_book_url: Url,
     contract_address: Address,
+    _eqs_storage: TempDir,
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -69,13 +70,14 @@ async fn create_backend_and_sender_wallet<'a>(
     storage: &Path,
 ) -> (NetworkInfo, CapeWallet<'a, CapeBackend<'a, ()>>) {
     let network_tuple = create_test_network(rng, universal_param).await;
-    let (eqs_url, _eqs_dir, _join_eqs) = spawn_eqs(network_tuple.3).await;
+    let (eqs_url, eqs_dir, _join_eqs) = spawn_eqs(network_tuple.3).await;
     let network = NetworkInfo {
         sender_key: network_tuple.0,
         eqs_url,
         relayer_url: network_tuple.1,
         address_book_url: network_tuple.2,
         contract_address: network_tuple.3,
+        _eqs_storage: eqs_dir,
     };
 
     let mut loader = MockCapeWalletLoader {
@@ -100,7 +102,7 @@ async fn create_backend_and_sender_wallet<'a>(
     .unwrap();
 
     let mut wallet = CapeWallet::new(backend).await.unwrap();
-
+    // let (faucet_key, _) = create_faucet(&contract_address)
     wallet
         .add_user_key(
             network.sender_key.clone(),
@@ -130,9 +132,16 @@ async fn create_backend_and_sender_wallet<'a>(
         .await
         == 0
     {
+        println!();
         event!(Level::INFO, "waiting for initial balance");
         retry_delay().await;
     }
+    let balance = wallet
+        .balance_breakdown(&address, &AssetCode::native())
+        .await;
+    println!("intial balance is {}", balance);
+    println!("intial asddress is {}", address);
+
     (network, wallet)
 }
 
@@ -164,7 +173,6 @@ async fn create_wallet<'a>(
     .unwrap();
 
     let mut wallet = CapeWallet::new(backend).await.unwrap();
-
     (
         wallet
             .generate_user_key("sending account".into(), None)
@@ -222,6 +230,7 @@ async fn main() {
         tmp_dirs.last().unwrap().path(),
     )
     .await;
+
     event!(Level::INFO, "Sender wallet has some initial balance");
     fund_eth_wallet(&mut wallet).await;
     event!(Level::INFO, "Funded Sender wallet with eth");

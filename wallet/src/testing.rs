@@ -270,13 +270,13 @@ pub enum OperationType {
 
 impl Distribution<OperationType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> OperationType {
-        match rng.gen_range(0..=5) {
+        match rng.gen_range(0..=1) {
             0 => OperationType::Transfer,
-            1 => OperationType::Freeze,
-            2 => OperationType::Unfreeze,
-            3 => OperationType::Wrap,
-            4 => OperationType::Burn,
             _ => OperationType::Mint,
+            // 2 => OperationType::Unfreeze,
+            // 3 => OperationType::Wrap,
+            // 4 => OperationType::Burn,
+            // _ => OperationType::Mint,
         }
     }
 }
@@ -454,7 +454,7 @@ pub async fn transfer_token<'a>(
 ) -> Result<TransactionReceipt<CapeLedger>, CapeWalletError> {
     event!(
         Level::INFO,
-        "Sending {} to: {} from {}.  Asset: code {}",
+        "Sending {} from: {}, to: {}.  Asset: code {}",
         amount,
         sender.pub_keys().await[0].address(),
         receiver_address,
