@@ -285,12 +285,18 @@ pub struct CapeContractState {
     pub erc20_deposits: Vec<RecordCommitment>,
 }
 
-pub fn erc20_asset_description(erc20_code: &Erc20Code, sponsor: &EthereumAddr) -> Vec<u8> {
+pub fn erc20_asset_description(
+    erc20_code: &Erc20Code,
+    sponsor: &EthereumAddr,
+    policy: AssetPolicy,
+) -> Vec<u8> {
     [
         "EsSCAPE ERC20".as_bytes(),
         (erc20_code.0).0.as_ref(),
         "sponsored by".as_bytes(),
         sponsor.0.as_ref(),
+        "policy".as_bytes(),
+        policy,
     ]
     .concat()
 }
