@@ -1,9 +1,13 @@
-name: Build
+name: ARM64 Build
 
 on:
   push:
     branches:
       - main
+  pull_request:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
 
 env:
   RUST_TEST_THREADS: 4
@@ -12,11 +16,11 @@ env:
 
 jobs:
   build:
-    runs-on: [self-hosted, X64]
+    runs-on: [self-hosted, arm64]
     container:
       image: ghcr.io/espressosystems/nix:main
       volumes:
-        - github_nix_281:/nix
+        - github_nix_251:/nix
     steps:
       - uses: styfle/cancel-workflow-action@0.9.1
         name: Cancel Outdated Builds
@@ -28,6 +32,10 @@ jobs:
           name: espresso-systems-private
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      - name: Potential broken submodules fix
+        run: |
+          git checkout -f $(git -c user.name=x -c user.email=x@x commit-tree $(git hash-object -t tree /dev/null) < /dev/null) || :
+
       - uses: actions/checkout@v2
         name: Checkout Repository
 
@@ -36,6 +44,9 @@ jobs:
 
       - name: Initialize Nix Shell
         run: nix-shell --run "echo Init"
+
+      - name: Why does this work
+        run: nix-shell --run "pnpm --recursive install"
 
       - name: Cache cargo
         uses: actions/cache@v2
@@ -46,58 +57,28 @@ jobs:
             ~/.cargo/git
             target
           # todo: add nix key, for example:  nix-instantiate shell.nix | sha256sum  | head -c 10
-          key: cape-v5-${{ hashFiles('Cargo.lock') }}
-
-      - name: Linting
-        run: nix-shell --run "prepend-timestamps lint-ci"
-
-      - name: Build Slow Tests
-        # Make sure the slow tests build, but don't run them (we have another workflow for that).
-        run: nix-shell --run "prepend-timestamps cargo test --release --features=slow-tests --no-run"
-
-      - name: Run Tests
-        run: nix-shell --run "prepend-timestamps cape-test-geth"
-
-      - name: Generate Docs
-        run: nix-shell --run "prepend-timestamps make-doc"
-
-      - name: Deploy Docs
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/main' }}
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./doc/mdbook/book/
-          cname: cape.docs.espressosys.com
+          key: arm-cape-v5-${{ hashFiles('Cargo.lock') }}
 
       - name: Build all executables
         run: nix-shell --run "cargo build --release"
 
-      - name: Build demo geth data dir
-        run: nix-shell --run "demo/initialize-demo-geth"
-
       - uses: actions/upload-artifact@v2
         with:
-          name: wallet-webserver
+          name: wallet-webserver-arm64
           path: |
             target/release/wallet-api
 
       - uses: actions/upload-artifact@v2
         with:
-          name: services-executables
+          name: services-executables-arm64
           path: |
             target/release/address-book
             target/release/eqs
             target/release/faucet
             target/release/minimal-relayer
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: geth-data-dir
-          path: |
-            scratch/geth-data-dir
-
   docker-wallet:
-    runs-on: [self-hosted, X64]
+    runs-on: [self-hosted, arm64]
     needs: build
     steps:
       - uses: actions/checkout@v2
@@ -107,7 +88,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: wallet-webserver
+          name: wallet-webserver-arm64
           path: wallet-checkout/target/release/
 
       - name: Set linker/loader to not be nix
@@ -137,13 +118,13 @@ jobs:
         with:
           context: ./wallet-checkout/
           file: ./wallet-checkout/wallet.Dockerfile
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
   docker-services:
-    runs-on: [self-hosted, X64]
+    runs-on: [self-hosted, arm64]
     needs: build
     steps:
       - uses: actions/checkout@v2
@@ -153,7 +134,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: services-executables
+          name: services-executables-arm64
           path: services-checkout/target/release/
 
       - uses: docker/setup-buildx-action@v1
@@ -183,46 +164,7 @@ jobs:
         with:
           context: ./services-checkout/
           file: ./services-checkout/services.Dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  docker-geth:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-        name: Checkout Repository
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: geth-data-dir
-          path: scratch/geth-data-dir/
-
-      - uses: docker/setup-buildx-action@v1
-        name: Setup Docker BuildKit (buildx)
-
-      - uses: docker/login-action@v1
-        name: Login to Github Container Repo
-        if: github.event_name != 'pull_request'
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/metadata-action@v3
-        name: Generate Docker Metadata
-        id: meta
-        with:
-          images: ghcr.io/espressosystems/cape/geth
-
-      - uses: docker/build-push-action@v2
-        name: Build and Push Docker
-        with:
-          context: ./
-          file: ./demo/geth.Dockerfile
-          platforms: linux/amd64
+          platforms: linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -174,6 +174,7 @@
             nixWithFlakes
             go-ethereum
             nodePackages.pnpm
+            nodePackages.node-gyp-build
             mySolc
             hivemind # process runner
             nodejs-16_x # nodejs
@@ -199,9 +200,6 @@
         SOLC_OPTIMIZER_RUNS = "20";
 
         shellHook = ''
-          echo "Ensuring node dependencies are installed"
-          pnpm --recursive install
-
           if [ ! -f .env ]; then
             echo "Copying .env.sample to .env"
             cp .env.sample .env
@@ -221,6 +219,9 @@
           export WALLET=''${my_pwd}/wallet
 
           git config --local blame.ignoreRevsFile .git-blame-ignore-revs
+
+          echo "Ensuring node dependencies are installed"
+          pnpm --recursive install
         ''
         # install pre-commit hooks
         + self.checks.${system}.pre-commit-check.shellHook;
@@ -254,8 +255,7 @@
           CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
 
           shellHook = ''
-            echo "Ensuring node dependencies are installed"
-            ${pkgs.nodePackages.pnpm}/bin/pnpm --recursive install
+
 
             if [ ! -f .env ]; then
               echo "Copying .env.sample to .env"
@@ -276,6 +276,10 @@
             export WALLET=''${my_pwd}/wallet
 
             export PATH="${pkgs.nodePackages.pnpm}/bin:${pkgs.nodejs-16_x}/bin:${stableMuslRustToolchain}/bin:${pkgs.gcc}/bin/:$PATH"
+
+            echo "Ensuring node dependencies are installed"
+            ${pkgs.nodePackages.pnpm}/bin/pnpm --recursive install
+
           '';
         };
       };
